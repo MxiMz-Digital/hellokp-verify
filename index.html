@@ -195,7 +195,6 @@
     </div>
 
     <script>
-      // ✅ CONFIG — Supabase Edge Function endpoint
       const EDGE_VERIFY_URL =
         "https://xtoczgaklmkbvnwoyvqm.supabase.co/functions/v1/deal_verify";
 
@@ -245,95 +244,97 @@
         clearDetails();
 
         if (!token) {
-          setState(
-            "bad",
-            "❌",
-            "Missing token",
-            "This QR code does not include a verification token."
-          );
+          setState("bad","❌","Missing token","This QR code does not include a verification token.");
           return;
         }
 
-        setState("loading", "⏳", "Checking…", "Validating this redemption token…");
+        setState("loading","⏳","Checking…","Validating this redemption token…");
 
         try {
-          const res = await fetch(EDGE_VERIFY_URL + "?t=" + encodeURIComponent(token), {
-            method: "GET",
-            cache: "no-store",
-          });
+          const res = await fetch(
+            EDGE_VERIFY_URL + "?t=" + encodeURIComponent(token),
+            { method: "GET", cache: "no-store" }
+          );
 
           const body = await res.json().catch(() => null);
 
           if (!body) {
-            setState("bad", "⚠️", "Server error", "Could not read server response.");
+            setState("bad","⚠️","Server error","Could not read server response.");
             return;
           }
 
-          // Populate details if present
           const data = body.data || {};
-          const state = (data && data.state) ? String(data.state) : null;
+          const state = data.state ? String(data.state) : "";
+          const redeemedAt = data.redeemed_at ? String(data.redeemed_at) : "";
+          const verifiedAt = data.verified_at ? String(data.verified_at) : "";
 
+          // Populate details if present
           expiresView.textContent = fmt(data.verify_expires_at);
           redemptionView.textContent = data.redemption_id || "—";
           dealView.textContent = data.deal_id || "—";
 
-          // Keep legacy status checks for invalid/not-found
+          // Hard errors
           if (res.status === 400 && body.message === "Invalid verification token") {
-            setState("bad", "❌", "Invalid QR", "This token format is invalid.");
+            setState("bad","❌","Invalid QR","This token format is invalid.");
             return;
           }
-
           if (res.status === 404 && body.message === "Token not found") {
-            setState("bad", "❌", "Not found", "This token does not exist in the system.");
+            setState("bad","❌","Not found","This token does not exist in the system.");
             return;
           }
 
-          // ✅ Use server state (preferred)
+          // ✅ Preferred: server state handling
           if (state === "already_verified") {
-            setState("expired", "✅", "Already verified", "This redemption was already verified earlier.");
+            setState(
+              "expired",
+              "✅",
+              "ALREADY VERIFIED",
+              verifiedAt
+                ? ("Staff already verified at " + fmt(verifiedAt) + ".")
+                : "This redemption was already verified earlier."
+            );
             return;
           }
 
           if (state === "redeemed") {
-            setState("expired", "✅", "ALREADY REDEEMED", "This deal was already used. Do not accept again.");
+            setState(
+              "expired",
+              "✅",
+              "ALREADY REDEEMED",
+              redeemedAt
+                ? ("Redeemed at " + fmt(redeemedAt) + ". Do not accept again.")
+                : "This deal was already used. Do not accept again."
+            );
             return;
           }
 
           if (state === "expired") {
-            setState("expired", "⏱️", "Expired", "This token has expired. Ask customer to re-generate.");
+            setState("expired","⏱️","Expired","This token has expired. Ask customer to re-generate.");
             return;
           }
 
           if (state === "valid") {
-            setState("ok", "✅", "VALID", "This redemption is valid. You may accept it.");
+            setState("ok","✅","VALID","This redemption is valid. You may accept it.");
             return;
           }
 
-          // Legacy fallbacks (in case server doesn't send state)
+          // Legacy fallbacks
           if (body.ok && body.message === "Already verified") {
-            setState("expired", "✅", "Already verified", "This redemption was already verified earlier.");
+            setState("expired","✅","ALREADY VERIFIED","This redemption was already verified earlier.");
             return;
           }
-
           if (!body.ok && body.message === "Token expired") {
-            setState("expired", "⏱️", "Expired", "This token has expired. Ask customer to re-generate.");
+            setState("expired","⏱️","Expired","This token has expired. Ask customer to re-generate.");
             return;
           }
-
           if (body.ok && body.message === "Valid token") {
-            setState("ok", "✅", "VALID", "This redemption is valid. You may accept it.");
+            setState("ok","✅","VALID","This redemption is valid. You may accept it.");
             return;
           }
 
-          // Fallback
-          setState(
-            "bad",
-            "⚠️",
-            "Unexpected response",
-            body.message || "Unknown validation response."
-          );
+          setState("bad","⚠️","Unexpected response", body.message || "Unknown validation response.");
         } catch (e) {
-          setState("bad", "⚠️", "Network error", "Unable to reach verification server.");
+          setState("bad","⚠️","Network error","Unable to reach verification server.");
         }
       }
 
@@ -346,9 +347,7 @@
           await navigator.clipboard.writeText(token);
           copyBtn.textContent = "Copied ✅";
           setTimeout(() => (copyBtn.textContent = "Copy token"), 1200);
-        } catch {
-          // ignore
-        }
+        } catch {}
       });
 
       verify();
