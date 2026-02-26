@@ -264,7 +264,6 @@
 
           const body = await res.json().catch(() => null);
 
-          // If server didn't return JSON, treat as error
           if (!body) {
             setState("bad", "⚠️", "Server error", "Could not read server response.");
             return;
@@ -272,11 +271,13 @@
 
           // Populate details if present
           const data = body.data || {};
+          const state = (data && data.state) ? String(data.state) : null;
+
           expiresView.textContent = fmt(data.verify_expires_at);
           redemptionView.textContent = data.redemption_id || "—";
           dealView.textContent = data.deal_id || "—";
 
-          // Friendly state handling
+          // Keep legacy status checks for invalid/not-found
           if (res.status === 400 && body.message === "Invalid verification token") {
             setState("bad", "❌", "Invalid QR", "This token format is invalid.");
             return;
@@ -287,13 +288,30 @@
             return;
           }
 
+          // ✅ Use server state (preferred)
+          if (state === "already_verified") {
+            setState("expired", "✅", "Already verified", "This redemption was already verified earlier.");
+            return;
+          }
+
+          if (state === "redeemed") {
+            setState("expired", "✅", "ALREADY REDEEMED", "This deal was already used. Do not accept again.");
+            return;
+          }
+
+          if (state === "expired") {
+            setState("expired", "⏱️", "Expired", "This token has expired. Ask customer to re-generate.");
+            return;
+          }
+
+          if (state === "valid") {
+            setState("ok", "✅", "VALID", "This redemption is valid. You may accept it.");
+            return;
+          }
+
+          // Legacy fallbacks (in case server doesn't send state)
           if (body.ok && body.message === "Already verified") {
-            setState(
-              "expired",
-              "✅",
-              "Already verified",
-              "This redemption was already verified earlier."
-            );
+            setState("expired", "✅", "Already verified", "This redemption was already verified earlier.");
             return;
           }
 
