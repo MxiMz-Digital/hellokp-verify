@@ -109,6 +109,19 @@
       }
       button:hover { background: rgba(255,255,255,0.07); }
 
+      /* NEW: primary confirm button */
+      .btnPrimary {
+        background: rgba(34,197,94,0.16);
+        border: 1px solid rgba(34,197,94,0.35);
+        font-weight: 850;
+        letter-spacing: 0.2px;
+      }
+      .btnPrimary:hover { background: rgba(34,197,94,0.22); }
+      .btnPrimary:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
       .foot {
         margin-top: 12px;
         color: var(--muted);
@@ -184,12 +197,17 @@
         </div>
 
         <div class="actions">
+          <!-- NEW: confirm button (hidden unless VALID) -->
+          <button id="confirmBtn" class="btnPrimary" type="button" style="display:none;">
+            CONFIRM REDEMPTION
+          </button>
+
           <button id="refreshBtn" type="button">Refresh</button>
           <button id="copyBtn" type="button">Copy token</button>
         </div>
 
         <div class="foot">
-          <span class="pill">HelloKP Verification · Phase 2A</span>
+          <span class="pill">HelloKP Verification · Phase 2B</span>
         </div>
       </div>
     </div>
@@ -212,6 +230,7 @@
 
       const refreshBtn = el("refreshBtn");
       const copyBtn = el("copyBtn");
+      const confirmBtn = el("confirmBtn");
 
       function setState(state, emoji, title, message) {
         statusBox.className = "statusBox " + state;
@@ -236,12 +255,152 @@
         dealView.textContent = "—";
       }
 
-      async function verify() {
+      function getTokenFromUrl() {
         const url = new URL(window.location.href);
-        const token = (url.searchParams.get("t") || "").trim();
+        return (url.searchParams.get("t") || "").trim();
+      }
+
+      function showConfirm(show) {
+        confirmBtn.style.display = show ? "inline-block" : "none";
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = "CONFIRM REDEMPTION";
+      }
+
+      async function confirmRedemption(token) {
+        if (!token) return;
+
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = "CONFIRMING…";
+
+        try {
+          const res = await fetch(
+            EDGE_VERIFY_URL +
+              "?t=" +
+              encodeURIComponent(token) +
+              "&action=confirm",
+            { method: "GET", cache: "no-store" }
+          );
+
+          const body = await res.json().catch(() => null);
+          if (!body) {
+            setState("bad","⚠️","Server error","Could not read server response.");
+            showConfirm(false);
+            return;
+          }
+
+          // After confirm attempt, re-render using same handler
+          renderFromResponse(res, body, token);
+        } catch (e) {
+          setState("bad","⚠️","Network error","Unable to reach verification server.");
+          showConfirm(false);
+        }
+      }
+
+      function renderFromResponse(res, body, token) {
+        const data = body.data || {};
+        const state = data.state ? String(data.state) : "";
+        const redeemedAt = data.redeemed_at ? String(data.redeemed_at) : "";
+        const verifiedAt = data.verified_at ? String(data.verified_at) : "";
+
+        // Populate details if present
+        expiresView.textContent = fmt(data.verify_expires_at);
+        redemptionView.textContent = data.redemption_id || "—";
+        dealView.textContent = data.deal_id || "—";
+
+        // Hard errors
+        if (res.status === 400 && body.message === "Invalid verification token") {
+          setState("bad","❌","Invalid QR","This token format is invalid.");
+          showConfirm(false);
+          return;
+        }
+        if (res.status === 404 && body.message === "Token not found") {
+          setState("bad","❌","Not found","This token does not exist in the system.");
+          showConfirm(false);
+          return;
+        }
+
+        // NEW: verified (just confirmed now)
+        if (state === "verified") {
+          setState(
+            "ok",
+            "✅",
+            "VERIFIED",
+            verifiedAt
+              ? ("Staff confirmed at " + fmt(verifiedAt) + ".")
+              : "Staff confirmed this redemption."
+          );
+          showConfirm(false);
+          return;
+        }
+
+        if (state === "already_verified") {
+          setState(
+            "expired",
+            "✅",
+            "ALREADY VERIFIED",
+            verifiedAt
+              ? ("Staff already verified at " + fmt(verifiedAt) + ".")
+              : "This redemption was already verified earlier."
+          );
+          showConfirm(false);
+          return;
+        }
+
+        if (state === "redeemed") {
+          setState(
+            "expired",
+            "✅",
+            "ALREADY REDEEMED",
+            redeemedAt
+              ? ("Redeemed at " + fmt(redeemedAt) + ". Do not accept again.")
+              : "This deal was already used. Do not accept again."
+          );
+          showConfirm(false);
+          return;
+        }
+
+        if (state === "expired") {
+          setState("expired","⏱️","Expired","This token has expired. Ask customer to re-generate.");
+          showConfirm(false);
+          return;
+        }
+
+        if (state === "valid") {
+          setState("ok","✅","VALID","This redemption is valid. Tap CONFIRM to approve.");
+          showConfirm(true);
+          // wire up click
+          confirmBtn.onclick = () => confirmRedemption(token);
+          return;
+        }
+
+        // Legacy fallbacks
+        if (body.ok && body.message === "Already verified") {
+          setState("expired","✅","ALREADY VERIFIED","This redemption was already verified earlier.");
+          showConfirm(false);
+          return;
+        }
+        if (!body.ok && body.message === "Token expired") {
+          setState("expired","⏱️","Expired","This token has expired. Ask customer to re-generate.");
+          showConfirm(false);
+          return;
+        }
+        if (body.ok && body.message === "Valid token") {
+          setState("ok","✅","VALID","This redemption is valid. Tap CONFIRM to approve.");
+          showConfirm(true);
+          confirmBtn.onclick = () => confirmRedemption(token);
+          return;
+        }
+
+        setState("bad","⚠️","Unexpected response", body.message || "Unknown validation response.");
+        showConfirm(false);
+      }
+
+      async function verify() {
+        const token = getTokenFromUrl();
 
         tokenView.textContent = token || "—";
         clearDetails();
+        showConfirm(false);
 
         if (!token) {
           setState("bad","❌","Missing token","This QR code does not include a verification token.");
@@ -263,76 +422,7 @@
             return;
           }
 
-          const data = body.data || {};
-          const state = data.state ? String(data.state) : "";
-          const redeemedAt = data.redeemed_at ? String(data.redeemed_at) : "";
-          const verifiedAt = data.verified_at ? String(data.verified_at) : "";
-
-          // Populate details if present
-          expiresView.textContent = fmt(data.verify_expires_at);
-          redemptionView.textContent = data.redemption_id || "—";
-          dealView.textContent = data.deal_id || "—";
-
-          // Hard errors
-          if (res.status === 400 && body.message === "Invalid verification token") {
-            setState("bad","❌","Invalid QR","This token format is invalid.");
-            return;
-          }
-          if (res.status === 404 && body.message === "Token not found") {
-            setState("bad","❌","Not found","This token does not exist in the system.");
-            return;
-          }
-
-          // ✅ Preferred: server state handling
-          if (state === "already_verified") {
-            setState(
-              "expired",
-              "✅",
-              "ALREADY VERIFIED",
-              verifiedAt
-                ? ("Staff already verified at " + fmt(verifiedAt) + ".")
-                : "This redemption was already verified earlier."
-            );
-            return;
-          }
-
-          if (state === "redeemed") {
-            setState(
-              "expired",
-              "✅",
-              "ALREADY REDEEMED",
-              redeemedAt
-                ? ("Redeemed at " + fmt(redeemedAt) + ". Do not accept again.")
-                : "This deal was already used. Do not accept again."
-            );
-            return;
-          }
-
-          if (state === "expired") {
-            setState("expired","⏱️","Expired","This token has expired. Ask customer to re-generate.");
-            return;
-          }
-
-          if (state === "valid") {
-            setState("ok","✅","VALID","This redemption is valid. You may accept it.");
-            return;
-          }
-
-          // Legacy fallbacks
-          if (body.ok && body.message === "Already verified") {
-            setState("expired","✅","ALREADY VERIFIED","This redemption was already verified earlier.");
-            return;
-          }
-          if (!body.ok && body.message === "Token expired") {
-            setState("expired","⏱️","Expired","This token has expired. Ask customer to re-generate.");
-            return;
-          }
-          if (body.ok && body.message === "Valid token") {
-            setState("ok","✅","VALID","This redemption is valid. You may accept it.");
-            return;
-          }
-
-          setState("bad","⚠️","Unexpected response", body.message || "Unknown validation response.");
+          renderFromResponse(res, body, token);
         } catch (e) {
           setState("bad","⚠️","Network error","Unable to reach verification server.");
         }
@@ -341,7 +431,7 @@
       refreshBtn.addEventListener("click", () => verify());
 
       copyBtn.addEventListener("click", async () => {
-        const token = (new URL(window.location.href).searchParams.get("t") || "").trim();
+        const token = getTokenFromUrl();
         if (!token) return;
         try {
           await navigator.clipboard.writeText(token);
