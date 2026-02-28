@@ -122,6 +122,38 @@
         cursor: not-allowed;
       }
 
+      /* NEW: PIN UI */
+      .pinWrap {
+        margin-top: 12px;
+        display: none;
+        width: 100%;
+      }
+      .pinLabel {
+        font-size: 13px;
+        opacity: 0.85;
+        margin-bottom: 6px;
+      }
+      .pinInput {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.15);
+        background: rgba(0,0,0,0.25);
+        color: #fff;
+        font-size: 16px;
+        outline: none;
+      }
+      .pinInput:focus {
+        border-color: rgba(96,165,250,0.45);
+        box-shadow: 0 0 0 3px rgba(96,165,250,0.10);
+      }
+      .pinError {
+        margin-top: 8px;
+        color: #ffb4b4;
+        font-size: 13px;
+        display: none;
+      }
+
       .foot {
         margin-top: 12px;
         color: var(--muted);
@@ -196,8 +228,23 @@
           </div>
         </div>
 
+        <!-- NEW: Staff PIN area (hidden unless VALID) -->
+        <div id="pinWrap" class="pinWrap">
+          <div class="pinLabel">Staff PIN</div>
+          <input
+            id="staffPin"
+            class="pinInput"
+            type="password"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            placeholder="Enter 4–6 digit PIN"
+            maxlength="6"
+          />
+          <div id="pinError" class="pinError"></div>
+        </div>
+
         <div class="actions">
-          <!-- NEW: confirm button (hidden unless VALID) -->
+          <!-- confirm button (hidden unless VALID) -->
           <button id="confirmBtn" class="btnPrimary" type="button" style="display:none;">
             CONFIRM REDEMPTION
           </button>
@@ -207,7 +254,7 @@
         </div>
 
         <div class="foot">
-          <span class="pill">HelloKP Verification · Phase 2B</span>
+          <span class="pill">HelloKP Verification · Phase 3C</span>
         </div>
       </div>
     </div>
@@ -231,6 +278,10 @@
       const refreshBtn = el("refreshBtn");
       const copyBtn = el("copyBtn");
       const confirmBtn = el("confirmBtn");
+
+      const pinWrap = el("pinWrap");
+      const staffPin = el("staffPin");
+      const pinError = el("pinError");
 
       function setState(state, emoji, title, message) {
         statusBox.className = "statusBox " + state;
@@ -260,32 +311,73 @@
         return (url.searchParams.get("t") || "").trim();
       }
 
+      function showPin(show) {
+        pinWrap.style.display = show ? "block" : "none";
+        if (!show) {
+          staffPin.value = "";
+          pinError.style.display = "none";
+          pinError.textContent = "";
+        }
+      }
+
+      function showPinError(text) {
+        pinError.textContent = text || "Invalid PIN.";
+        pinError.style.display = "block";
+      }
+
       function showConfirm(show) {
         confirmBtn.style.display = show ? "inline-block" : "none";
         confirmBtn.disabled = false;
         confirmBtn.textContent = "CONFIRM REDEMPTION";
       }
 
-      async function confirmRedemption(token) {
+      async function confirmRedemptionWithPin(token) {
         if (!token) return;
+
+        const pin = (staffPin.value || "").trim();
+
+        pinError.style.display = "none";
+        pinError.textContent = "";
+
+        if (!pin || pin.length < 4) {
+          showPinError("Please enter staff PIN (4–6 digits).");
+          return;
+        }
 
         confirmBtn.disabled = true;
         confirmBtn.textContent = "CONFIRMING…";
 
         try {
+          // ✅ NEW: PIN-protected confirm via Edge Function
           const res = await fetch(
             EDGE_VERIFY_URL +
               "?t=" +
               encodeURIComponent(token) +
-              "&action=confirm",
+              "&action=confirm_pin" +
+              "&pin=" +
+              encodeURIComponent(pin),
             { method: "GET", cache: "no-store" }
           );
 
           const body = await res.json().catch(() => null);
+
           if (!body) {
             setState("bad","⚠️","Server error","Could not read server response.");
             showConfirm(false);
+            showPin(false);
             return;
+          }
+
+          // If server explicitly returns PIN error, show it nicely
+          if (body.ok === false && body.message) {
+            const m = String(body.message);
+            if (m.toLowerCase().includes("pin")) {
+              showPinError(body.message);
+              // Keep VALID state visible; do not hide confirm
+              confirmBtn.disabled = false;
+              confirmBtn.textContent = "CONFIRM REDEMPTION";
+              return;
+            }
           }
 
           // After confirm attempt, re-render using same handler
@@ -293,6 +385,7 @@
         } catch (e) {
           setState("bad","⚠️","Network error","Unable to reach verification server.");
           showConfirm(false);
+          showPin(false);
         }
       }
 
@@ -311,15 +404,17 @@
         if (res.status === 400 && body.message === "Invalid verification token") {
           setState("bad","❌","Invalid QR","This token format is invalid.");
           showConfirm(false);
+          showPin(false);
           return;
         }
         if (res.status === 404 && body.message === "Token not found") {
           setState("bad","❌","Not found","This token does not exist in the system.");
           showConfirm(false);
+          showPin(false);
           return;
         }
 
-        // NEW: verified (just confirmed now)
+        // verified (just confirmed now)
         if (state === "verified") {
           setState(
             "ok",
@@ -330,6 +425,7 @@
               : "Staff confirmed this redemption."
           );
           showConfirm(false);
+          showPin(false);
           return;
         }
 
@@ -343,6 +439,7 @@
               : "This redemption was already verified earlier."
           );
           showConfirm(false);
+          showPin(false);
           return;
         }
 
@@ -356,20 +453,30 @@
               : "This deal was already used. Do not accept again."
           );
           showConfirm(false);
+          showPin(false);
           return;
         }
 
         if (state === "expired") {
           setState("expired","⏱️","Expired","This token has expired. Ask customer to re-generate.");
           showConfirm(false);
+          showPin(false);
           return;
         }
 
         if (state === "valid") {
-          setState("ok","✅","VALID","This redemption is valid. Tap CONFIRM to approve.");
+          setState("ok","✅","VALID","This redemption is valid. Enter PIN, then tap CONFIRM to approve.");
           showConfirm(true);
+          showPin(true);
+
           // wire up click
-          confirmBtn.onclick = () => confirmRedemption(token);
+          confirmBtn.onclick = () => confirmRedemptionWithPin(token);
+
+          // nice UX: hit Enter to confirm
+          staffPin.onkeydown = (e) => {
+            if (e.key === "Enter") confirmRedemptionWithPin(token);
+          };
+
           return;
         }
 
@@ -377,22 +484,29 @@
         if (body.ok && body.message === "Already verified") {
           setState("expired","✅","ALREADY VERIFIED","This redemption was already verified earlier.");
           showConfirm(false);
+          showPin(false);
           return;
         }
         if (!body.ok && body.message === "Token expired") {
           setState("expired","⏱️","Expired","This token has expired. Ask customer to re-generate.");
           showConfirm(false);
+          showPin(false);
           return;
         }
         if (body.ok && body.message === "Valid token") {
-          setState("ok","✅","VALID","This redemption is valid. Tap CONFIRM to approve.");
+          setState("ok","✅","VALID","This redemption is valid. Enter PIN, then tap CONFIRM to approve.");
           showConfirm(true);
-          confirmBtn.onclick = () => confirmRedemption(token);
+          showPin(true);
+          confirmBtn.onclick = () => confirmRedemptionWithPin(token);
+          staffPin.onkeydown = (e) => {
+            if (e.key === "Enter") confirmRedemptionWithPin(token);
+          };
           return;
         }
 
         setState("bad","⚠️","Unexpected response", body.message || "Unknown validation response.");
         showConfirm(false);
+        showPin(false);
       }
 
       async function verify() {
@@ -401,6 +515,7 @@
         tokenView.textContent = token || "—";
         clearDetails();
         showConfirm(false);
+        showPin(false);
 
         if (!token) {
           setState("bad","❌","Missing token","This QR code does not include a verification token.");
