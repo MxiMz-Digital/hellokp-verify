@@ -1,202 +1,425 @@
-// supabase/functions/deal_verify/index.ts
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "jsr:@supabase/supabase-js@2";
-
-type JsonResponse = {
-  ok: boolean;
-  status: "ok" | "error";
-  message: string;
-  data?: Record<string, unknown>;
-};
-
-function json(body: JsonResponse, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "no-store",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers":
-        "authorization, x-client-info, apikey, content-type",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    },
-  });
-}
-
-function isUuid(v: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
-}
-
-async function readJson(req: Request) {
-  try {
-    return await req.json();
-  } catch {
-    return null;
-  }
-}
-
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers":
-          "authorization, x-client-info, apikey, content-type",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Cache-Control": "no-store",
-      },
-    });
-  }
-
-  try {
-    const url = new URL(req.url);
-
-    // token + action can come from GET params or POST body
-    let token = (url.searchParams.get("t") || "").trim();
-    let action = (url.searchParams.get("action") || "").trim().toLowerCase();
-    let pin = "";
-
-    if (req.method === "POST") {
-      const body = await readJson(req);
-      if (body) {
-        token = String(body.t || token || "").trim();
-        action = String(body.action || action || "").trim().toLowerCase();
-        pin = String(body.pin || "").trim();
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HelloKP — Deal Verification</title>
+    <meta name="robots" content="noindex,nofollow" />
+    <style>
+      :root {
+        --bg: #0b0f14;
+        --card: #111826;
+        --text: #e8eef7;
+        --muted: #a9b4c5;
+        --green: #22c55e;
+        --red: #ef4444;
+        --amber: #f59e0b;
+        --blue: #60a5fa;
+        --border: rgba(255, 255, 255, 0.08);
       }
-    }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+        background: radial-gradient(1200px 700px at 20% 0%, rgba(96,165,250,0.12), transparent 60%),
+                    radial-gradient(1000px 700px at 100% 20%, rgba(34,197,94,0.10), transparent 60%),
+                    var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+      .wrap { width: 100%; max-width: 760px; }
+      .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+      .logo {
+        width: 44px; height: 44px; border-radius: 14px;
+        background: linear-gradient(135deg, rgba(96,165,250,0.35), rgba(34,197,94,0.25));
+        border: 1px solid var(--border);
+      }
+      h1 { font-size: 20px; margin: 0; letter-spacing: 0.2px; }
+      .sub { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
 
-    // 1) Validate token
-    if (!token || !isUuid(token)) {
-      return json(
-        { ok: false, status: "error", message: "Invalid verification token" },
-        400,
-      );
-    }
-
-    // 2) Supabase client
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey =
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ||
-      Deno.env.get("SUPABASE_ANON_KEY")!;
-
-    const supabase = createClient(supabaseUrl, serviceKey, {
-      auth: { persistSession: false },
-    });
-
-    // ✅ NEW: PIN redeem path
-    // This will set redeemed_at if PIN is correct for the business linked to this redemption.
-    if (action === "redeem_with_pin") {
-      if (!pin) {
-        return json(
-          { ok: false, status: "error", message: "PIN required", data: { state: "invalid_pin" } },
-          400,
-        );
+      .card {
+        background: rgba(17,24,38,0.72);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 18px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.35);
       }
 
-      const { data: out, error } = await supabase.rpc("mark_redeemed_with_pin_v1", {
-        p_verify_token: token,
-        p_pin: pin,
-      });
+      .statusBox {
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        padding: 18px;
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .badge {
+        width: 54px; height: 54px;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        font-size: 26px;
+        border: 1px solid var(--border);
+      }
+      .big { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: 0.3px; }
+      .msg { margin: 4px 0 0; color: var(--muted); font-size: 14px; line-height: 1.35; }
 
-      if (error) {
-        return json(
-          { ok: false, status: "error", message: "Redeem failed", data: { hint: error.message } },
-          500,
-        );
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 14px;
+      }
+      .kv {
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 12px 12px;
+        background: rgba(255,255,255,0.02);
+      }
+      .k { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+      .v { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; word-break: break-all; }
+
+      .actions {
+        margin-top: 14px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      button {
+        cursor: pointer;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.04);
+        color: var(--text);
+        border-radius: 14px;
+        padding: 10px 14px;
+        font-size: 14px;
+        font-weight: 650;
+      }
+      button:hover { background: rgba(255,255,255,0.07); }
+
+      .btnPrimary {
+        background: rgba(34,197,94,0.16);
+        border: 1px solid rgba(34,197,94,0.35);
+        font-weight: 850;
+        letter-spacing: 0.2px;
+      }
+      .btnPrimary:hover { background: rgba(34,197,94,0.22); }
+      .btnPrimary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+      .pinWrap {
+        display: none;
+        width: 100%;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .pinInput {
+        flex: 1 1 200px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.03);
+        color: var(--text);
+        border-radius: 14px;
+        padding: 10px 12px;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        outline: none;
       }
 
-      // We expect your RPC returns JSON. We forward it safely.
-      // Recommended RPC states:
-      // - redeemed
-      // - already_redeemed
-      // - invalid_pin
-      // - expired
-      // - not_found
-      if (out && typeof out === "object") {
-        // normalize a little
-        const state = String((out as any).state || "");
-        const message = String((out as any).message || "OK");
+      .foot { margin-top: 12px; color: var(--muted); font-size: 12px; }
+      .pill {
+        display: inline-block;
+        border: 1px solid var(--border);
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.03);
+      }
 
-        // If staff enters wrong PIN, show invalid_pin
-        if (state === "invalid_pin") {
-          return json({ ok: false, status: "error", message: "Invalid PIN", data: { ...out } }, 400);
+      .ok { background: rgba(34,197,94,0.10); }
+      .ok .badge { background: rgba(34,197,94,0.18); }
+      .ok .big { color: var(--green); }
+
+      .expired { background: rgba(245,158,11,0.10); }
+      .expired .badge { background: rgba(245,158,11,0.18); }
+      .expired .big { color: var(--amber); }
+
+      .bad { background: rgba(239,68,68,0.10); }
+      .bad .badge { background: rgba(239,68,68,0.18); }
+      .bad .big { color: var(--red); }
+
+      .loading { background: rgba(96,165,250,0.10); }
+      .loading .badge { background: rgba(96,165,250,0.18); }
+      .loading .big { color: var(--blue); }
+
+      @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+
+  <body>
+    <div class="wrap">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>HelloKP — Deal Verification</h1>
+          <p class="sub">Staff view · Scan QR to verify redemption</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div id="statusBox" class="statusBox loading">
+          <div id="badge" class="badge">⏳</div>
+          <div>
+            <p id="big" class="big">Checking…</p>
+            <p id="msg" class="msg">Please wait while we validate this QR token.</p>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="kv">
+            <div class="k">Token</div>
+            <div class="v" id="tokenView">—</div>
+          </div>
+          <div class="kv">
+            <div class="k">Expires at</div>
+            <div class="v" id="expiresView">—</div>
+          </div>
+          <div class="kv">
+            <div class="k">Redemption ID</div>
+            <div class="v" id="redemptionView">—</div>
+          </div>
+          <div class="kv">
+            <div class="k">Deal ID</div>
+            <div class="v" id="dealView">—</div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <div id="pinWrap" class="pinWrap">
+            <input
+              id="pinInput"
+              class="pinInput"
+              type="password"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              placeholder="Enter staff PIN"
+              maxlength="8"
+            />
+            <button id="redeemBtn" class="btnPrimary" type="button">
+              CONFIRM WITH PIN
+            </button>
+          </div>
+
+          <button id="refreshBtn" type="button">Refresh</button>
+          <button id="copyBtn" type="button">Copy token</button>
+        </div>
+
+        <div class="foot">
+          <span class="pill">HelloKP Verification · Phase 3C</span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const EDGE_VERIFY_URL =
+        "https://xtoczgaklmkbvnwoyvqm.supabase.co/functions/v1/deal_verify";
+
+      const el = (id) => document.getElementById(id);
+
+      const statusBox = el("statusBox");
+      const badge = el("badge");
+      const big = el("big");
+      const msg = el("msg");
+
+      const tokenView = el("tokenView");
+      const expiresView = el("expiresView");
+      const redemptionView = el("redemptionView");
+      const dealView = el("dealView");
+
+      const refreshBtn = el("refreshBtn");
+      const copyBtn = el("copyBtn");
+
+      const pinWrap = el("pinWrap");
+      const pinInput = el("pinInput");
+      const redeemBtn = el("redeemBtn");
+
+      function setState(state, emoji, title, message) {
+        statusBox.className = "statusBox " + state;
+        badge.textContent = emoji;
+        big.textContent = title;
+        msg.textContent = message;
+      }
+
+      function fmt(ts) {
+        if (!ts) return "—";
+        try {
+          const d = new Date(ts);
+          return d.toLocaleString();
+        } catch {
+          return String(ts);
+        }
+      }
+
+      function clearDetails() {
+        expiresView.textContent = "—";
+        redemptionView.textContent = "—";
+        dealView.textContent = "—";
+      }
+
+      function getTokenFromUrl() {
+        const url = new URL(window.location.href);
+        return (url.searchParams.get("t") || "").trim();
+      }
+
+      function showPinUI(show) {
+        pinWrap.style.display = show ? "flex" : "none";
+        redeemBtn.disabled = false;
+        redeemBtn.textContent = "CONFIRM WITH PIN";
+        if (!show) pinInput.value = "";
+      }
+
+      async function redeemWithPin(token) {
+        const pin = (pinInput.value || "").trim();
+        if (!pin) {
+          setState("bad", "⚠️", "PIN required", "Enter staff PIN to confirm redemption.");
+          return;
         }
 
-        return json({ ok: true, status: "ok", message, data: { ...out } });
+        redeemBtn.disabled = true;
+        redeemBtn.textContent = "CONFIRMING…";
+
+        try {
+          const res = await fetch(EDGE_VERIFY_URL, {
+            method: "POST",
+            cache: "no-store",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ t: token, action: "redeem_with_pin", pin }),
+          });
+
+          const body = await res.json().catch(() => null);
+          if (!body) {
+            setState("bad","⚠️","Server error","Could not read server response.");
+            showPinUI(false);
+            return;
+          }
+
+          renderFromResponse(res, body, token);
+        } catch (e) {
+          setState("bad","⚠️","Network error","Unable to reach verification server.");
+          showPinUI(false);
+        }
       }
 
-      // fallback
-      return json({ ok: true, status: "ok", message: "OK", data: { state: "ok" } });
-    }
+      function renderFromResponse(res, body, token) {
+        const data = body.data || {};
+        const state = data.state ? String(data.state) : "";
 
-    // 3) Default GET verification (read-only)
-    const { data, error } = await supabase
-      .from("deal_redemptions")
-      .select("id, deal_id, redeemed_at, verify_token, verify_expires_at")
-      .eq("verify_token", token)
-      .maybeSingle();
+        expiresView.textContent = fmt(data.verify_expires_at);
+        redemptionView.textContent = data.redemption_id || "—";
+        dealView.textContent = data.deal_id || "—";
 
-    if (error) {
-      return json(
-        { ok: false, status: "error", message: "Database error", data: { hint: error.message } },
-        500,
-      );
-    }
-    if (!data) {
-      return json({ ok: false, status: "error", message: "Token not found" }, 404);
-    }
+        // hard errors
+        if (res.status === 400 && body.message === "Invalid verification token") {
+          setState("bad","❌","Invalid QR","This token format is invalid.");
+          showPinUI(false);
+          return;
+        }
+        if (res.status === 404 && body.message === "Token not found") {
+          setState("bad","❌","Not found","This token does not exist in the system.");
+          showPinUI(false);
+          return;
+        }
 
-    const expiresAtMs = data.verify_expires_at ? new Date(data.verify_expires_at).getTime() : null;
-    const isExpired = !!(expiresAtMs && expiresAtMs <= Date.now());
+        // pin errors (new)
+        if (state === "invalid_pin") {
+          setState("bad","🔒","Wrong PIN","PIN did not match. Try again.");
+          showPinUI(true);
+          return;
+        }
 
-    if (data.redeemed_at) {
-      return json({
-        ok: true,
-        status: "ok",
-        message: "Already redeemed",
-        data: {
-          state: "redeemed",
-          redemption_id: data.id,
-          deal_id: data.deal_id,
-          redeemed_at: data.redeemed_at,
-          verify_expires_at: data.verify_expires_at,
-        },
+        // already redeemed
+        if (state === "redeemed") {
+          setState(
+            "expired",
+            "✅",
+            "ALREADY REDEEMED",
+            data.redeemed_at ? ("Redeemed at " + fmt(data.redeemed_at) + ". Do not accept again.")
+                            : "This deal was already used. Do not accept again."
+          );
+          showPinUI(false);
+          return;
+        }
+
+        // expired token
+        if (state === "expired") {
+          setState("expired","⏱️","Expired","This token has expired. Ask customer to re-generate.");
+          showPinUI(false);
+          return;
+        }
+
+        // valid => show PIN UI
+        if (state === "valid") {
+          setState("ok","✅","VALID","Enter staff PIN and tap CONFIRM.");
+          showPinUI(true);
+          redeemBtn.onclick = () => redeemWithPin(token);
+          return;
+        }
+
+        // default fallback
+        setState("bad","⚠️","Unexpected response", body.message || "Unknown validation response.");
+        showPinUI(false);
+      }
+
+      async function verify() {
+        const token = getTokenFromUrl();
+
+        tokenView.textContent = token || "—";
+        clearDetails();
+        showPinUI(false);
+
+        if (!token) {
+          setState("bad","❌","Missing token","This QR code does not include a verification token.");
+          return;
+        }
+
+        setState("loading","⏳","Checking…","Validating this redemption token…");
+
+        try {
+          const res = await fetch(
+            EDGE_VERIFY_URL + "?t=" + encodeURIComponent(token),
+            { method: "GET", cache: "no-store" }
+          );
+
+          const body = await res.json().catch(() => null);
+
+          if (!body) {
+            setState("bad","⚠️","Server error","Could not read server response.");
+            return;
+          }
+
+          renderFromResponse(res, body, token);
+        } catch (e) {
+          setState("bad","⚠️","Network error","Unable to reach verification server.");
+        }
+      }
+
+      refreshBtn.addEventListener("click", () => verify());
+
+      copyBtn.addEventListener("click", async () => {
+        const token = getTokenFromUrl();
+        if (!token) return;
+        try {
+          await navigator.clipboard.writeText(token);
+          copyBtn.textContent = "Copied ✅";
+          setTimeout(() => (copyBtn.textContent = "Copy token"), 1200);
+        } catch {}
       });
-    }
 
-    if (isExpired) {
-      return json(
-        {
-          ok: false,
-          status: "error",
-          message: "Token expired",
-          data: {
-            state: "expired",
-            redemption_id: data.id,
-            deal_id: data.deal_id,
-            verify_expires_at: data.verify_expires_at,
-          },
-        },
-        400,
-      );
-    }
-
-    return json({
-      ok: true,
-      status: "ok",
-      message: "Valid token",
-      data: {
-        state: "valid",
-        redemption_id: data.id,
-        deal_id: data.deal_id,
-        verify_expires_at: data.verify_expires_at,
-      },
-    });
-  } catch (e) {
-    return json(
-      { ok: false, status: "error", message: "Unexpected server error", data: { hint: String(e) } },
-      500,
-    );
-  }
-});
+      verify();
+    </script>
+  </body>
+</html>
