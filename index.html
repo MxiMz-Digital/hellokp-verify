@@ -17,99 +17,124 @@
         --blue: #60a5fa;
         --border: rgba(255, 255, 255, 0.08);
       }
+
       * { box-sizing: border-box; }
+
       body {
         margin: 0;
         font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-        background: radial-gradient(1200px 700px at 20% 0%, rgba(96,165,250,0.12), transparent 60%),
-                    radial-gradient(1000px 700px at 100% 20%, rgba(34,197,94,0.10), transparent 60%),
-                    var(--bg);
+        background:
+          radial-gradient(1200px 700px at 20% 0%, rgba(96,165,250,0.12), transparent 60%),
+          radial-gradient(1000px 700px at 100% 20%, rgba(34,197,94,0.10), transparent 60%),
+          var(--bg);
         color: var(--text);
         min-height: 100vh;
         display: grid;
         place-items: center;
         padding: 24px;
       }
-      .wrap { width: 100%; max-width: 760px; }
-      .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+
+      .wrap {
+        width: 100%;
+        max-width: 760px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
       .logo {
-        width: 44px; height: 44px; border-radius: 14px;
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
         background: linear-gradient(135deg, rgba(96,165,250,0.35), rgba(34,197,94,0.25));
         border: 1px solid var(--border);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.18);
       }
-      h1 { font-size: 20px; margin: 0; letter-spacing: 0.2px; }
-      .sub { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+
+      h1 {
+        font-size: 20px;
+        margin: 0;
+        letter-spacing: 0.2px;
+      }
+
+      .sub {
+        margin: 2px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
 
       .card {
-        background: rgba(17,24,38,0.72);
+        background: rgba(17,24,38,0.78);
         border: 1px solid var(--border);
-        border-radius: 20px;
-        padding: 18px;
+        border-radius: 24px;
+        padding: 20px;
         box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+        backdrop-filter: blur(12px);
       }
 
       .statusBox {
-        border-radius: 18px;
+        border-radius: 22px;
         border: 1px solid var(--border);
-        padding: 18px;
-        margin-top: 10px;
+        padding: 20px;
+        margin-top: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+      }
+
+      .statusTop {
         display: flex;
         align-items: center;
         gap: 14px;
+        width: 100%;
       }
+
       .badge {
-        width: 54px; height: 54px;
-        border-radius: 18px;
+        width: 58px;
+        height: 58px;
+        border-radius: 20px;
         display: grid;
         place-items: center;
+        font-size: 28px;
+        border: 1px solid var(--border);
+        flex-shrink: 0;
+      }
+
+      .big {
         font-size: 26px;
-        border: 1px solid var(--border);
+        font-weight: 900;
+        margin: 0;
+        letter-spacing: 0.3px;
+        line-height: 1.05;
       }
-      .big { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: 0.3px; }
-      .msg { margin: 4px 0 0; color: var(--muted); font-size: 14px; line-height: 1.35; }
 
-      .row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        margin-top: 14px;
-      }
-      .kv {
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 12px 12px;
-        background: rgba(255,255,255,0.02);
-      }
-      .k { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
-      .v { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; word-break: break-all; }
-
-      .actions {
-        margin-top: 14px;
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        align-items: center;
-      }
-      button {
-        cursor: pointer;
-        border: 1px solid var(--border);
-        background: rgba(255,255,255,0.04);
-        color: var(--text);
-        border-radius: 14px;
-        padding: 10px 14px;
+      .msg {
+        margin: 5px 0 0;
+        color: var(--muted);
         font-size: 14px;
-        font-weight: 650;
+        line-height: 1.45;
       }
-      button:hover { background: rgba(255,255,255,0.07); }
 
-      .btnPrimary {
-        background: rgba(34,197,94,0.16);
-        border: 1px solid rgba(34,197,94,0.35);
-        font-weight: 850;
-        letter-spacing: 0.2px;
+      .actionSection {
+        display: none;
+        margin-top: 18px;
+        padding: 16px;
+        border-radius: 18px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--border);
       }
-      .btnPrimary:hover { background: rgba(34,197,94,0.22); }
-      .btnPrimary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+      .actionLabel {
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 10px;
+        letter-spacing: 0.3px;
+      }
 
       .pinWrap {
         display: none;
@@ -118,45 +143,165 @@
         align-items: center;
         flex-wrap: wrap;
       }
+
       .pinInput {
-        flex: 1 1 200px;
+        flex: 1 1 220px;
         border: 1px solid var(--border);
         background: rgba(255,255,255,0.03);
         color: var(--text);
-        border-radius: 14px;
-        padding: 10px 12px;
-        font-size: 14px;
-        font-weight: 700;
-        letter-spacing: 2px;
+        border-radius: 16px;
+        padding: 14px 16px;
+        font-size: 20px;
+        font-weight: 800;
+        letter-spacing: 6px;
+        text-align: center;
         outline: none;
       }
 
-      .foot { margin-top: 12px; color: var(--muted); font-size: 12px; }
+      .pinInput::placeholder {
+        letter-spacing: 1px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 16px;
+        opacity: 0.68;
+      }
+
+      .kv {
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 12px;
+        background: rgba(255,255,255,0.02);
+      }
+
+      .k {
+        color: var(--muted);
+        font-size: 12px;
+        margin-bottom: 6px;
+      }
+
+      .v {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 12px;
+        word-break: break-all;
+      }
+
+      .actions {
+        margin-top: 14px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      button {
+        cursor: pointer;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.04);
+        color: var(--text);
+        border-radius: 14px;
+        padding: 10px 14px;
+        font-size: 14px;
+        font-weight: 700;
+        transition: background 0.18s ease, opacity 0.18s ease, transform 0.18s ease;
+      }
+
+      button:hover {
+        background: rgba(255,255,255,0.08);
+      }
+
+      .btnPrimary {
+        width: 100%;
+        background: rgba(34,197,94,0.16);
+        border: 1px solid rgba(34,197,94,0.35);
+        padding: 14px 16px;
+        font-size: 16px;
+        font-weight: 900;
+        letter-spacing: 0.25px;
+      }
+
+      .btnPrimary:hover {
+        background: rgba(34,197,94,0.24);
+      }
+
+      .btnPrimary:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .foot {
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
       .pill {
         display: inline-block;
         border: 1px solid var(--border);
-        padding: 4px 10px;
+        padding: 5px 10px;
         border-radius: 999px;
         background: rgba(255,255,255,0.03);
       }
 
-      .ok { background: rgba(34,197,94,0.10); }
-      .ok .badge { background: rgba(34,197,94,0.18); }
-      .ok .big { color: var(--green); }
+      .ok {
+        background: rgba(34,197,94,0.10);
+      }
+      .ok .badge {
+        background: rgba(34,197,94,0.18);
+      }
+      .ok .big {
+        color: var(--green);
+      }
 
-      .expired { background: rgba(245,158,11,0.10); }
-      .expired .badge { background: rgba(245,158,11,0.18); }
-      .expired .big { color: var(--amber); }
+      .expired {
+        background: rgba(245,158,11,0.10);
+      }
+      .expired .badge {
+        background: rgba(245,158,11,0.18);
+      }
+      .expired .big {
+        color: var(--amber);
+      }
 
-      .bad { background: rgba(239,68,68,0.10); }
-      .bad .badge { background: rgba(239,68,68,0.18); }
-      .bad .big { color: var(--red); }
+      .bad {
+        background: rgba(239,68,68,0.10);
+      }
+      .bad .badge {
+        background: rgba(239,68,68,0.18);
+      }
+      .bad .big {
+        color: var(--red);
+      }
 
-      .loading { background: rgba(96,165,250,0.10); }
-      .loading .badge { background: rgba(96,165,250,0.18); }
-      .loading .big { color: var(--blue); }
+      .loading {
+        background: rgba(96,165,250,0.10);
+      }
+      .loading .badge {
+        background: rgba(96,165,250,0.18);
+      }
+      .loading .big {
+        color: var(--blue);
+      }
 
-      @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
+      @media (max-width: 640px) {
+        .row {
+          grid-template-columns: 1fr;
+        }
+
+        .pinWrap {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .pinInput {
+          width: 100%;
+        }
+      }
     </style>
   </head>
 
@@ -166,16 +311,37 @@
         <div class="logo" aria-hidden="true"></div>
         <div>
           <h1>HelloKP — Deal Verification</h1>
-          <p class="sub">Staff view · Scan QR to verify redemption</p>
+          <p class="sub">Staff view · Secure redemption approval</p>
         </div>
       </div>
 
       <div class="card">
         <div id="statusBox" class="statusBox loading">
-          <div id="badge" class="badge">⏳</div>
-          <div>
-            <p id="big" class="big">Checking…</p>
-            <p id="msg" class="msg">Please wait while we validate this QR token.</p>
+          <div class="statusTop">
+            <div id="badge" class="badge">⏳</div>
+            <div>
+              <p id="big" class="big">Checking…</p>
+              <p id="msg" class="msg">Please wait while we validate this QR token.</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="actionSection" class="actionSection">
+          <div class="actionLabel">Secure verification required</div>
+
+          <div id="pinWrap" class="pinWrap">
+            <input
+              id="pinInput"
+              class="pinInput"
+              type="password"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              placeholder="Enter staff PIN"
+              maxlength="8"
+            />
+            <button id="redeemBtn" class="btnPrimary" type="button">
+              VERIFY & CONFIRM
+            </button>
           </div>
         </div>
 
@@ -199,27 +365,12 @@
         </div>
 
         <div class="actions">
-          <div id="pinWrap" class="pinWrap">
-            <input
-              id="pinInput"
-              class="pinInput"
-              type="password"
-              inputmode="numeric"
-              autocomplete="one-time-code"
-              placeholder="Enter staff PIN"
-              maxlength="8"
-            />
-            <button id="redeemBtn" class="btnPrimary" type="button">
-              CONFIRM WITH PIN
-            </button>
-          </div>
-
           <button id="refreshBtn" type="button">Refresh</button>
           <button id="copyBtn" type="button">Copy token</button>
         </div>
 
         <div class="foot">
-          <span class="pill">HelloKP Verification · Phase 3C</span>
+          <span class="pill">Verified by HelloKP</span>
         </div>
       </div>
     </div>
@@ -243,6 +394,7 @@
       const refreshBtn = el("refreshBtn");
       const copyBtn = el("copyBtn");
 
+      const actionSection = el("actionSection");
       const pinWrap = el("pinWrap");
       const pinInput = el("pinInput");
       const redeemBtn = el("redeemBtn");
@@ -276,21 +428,29 @@
       }
 
       function showPinUI(show) {
+        actionSection.style.display = show ? "block" : "none";
         pinWrap.style.display = show ? "flex" : "none";
         redeemBtn.disabled = false;
-        redeemBtn.textContent = "CONFIRM WITH PIN";
+        redeemBtn.textContent = "VERIFY & CONFIRM";
         if (!show) pinInput.value = "";
       }
 
       async function redeemWithPin(token) {
         const pin = (pinInput.value || "").trim();
+
         if (!pin) {
-          setState("bad", "⚠️", "PIN required", "Enter staff PIN to confirm redemption.");
+          setState(
+            "bad",
+            "⚠️",
+            "PIN REQUIRED",
+            "Enter staff PIN to continue verification."
+          );
+          pinInput.focus();
           return;
         }
 
         redeemBtn.disabled = true;
-        redeemBtn.textContent = "CONFIRMING…";
+        redeemBtn.textContent = "VERIFYING…";
 
         try {
           const res = await fetch(EDGE_VERIFY_URL, {
@@ -301,15 +461,26 @@
           });
 
           const body = await res.json().catch(() => null);
+
           if (!body) {
-            setState("bad","⚠️","Server error","Could not read server response.");
+            setState(
+              "bad",
+              "⚠️",
+              "SERVER ERROR",
+              "Could not read server response."
+            );
             showPinUI(false);
             return;
           }
 
           renderFromResponse(res, body, token);
         } catch (e) {
-          setState("bad","⚠️","Network error","Unable to reach verification server.");
+          setState(
+            "bad",
+            "⚠️",
+            "NETWORK ERROR",
+            "Unable to reach verification server."
+          );
           showPinUI(false);
         }
       }
@@ -322,55 +493,83 @@
         redemptionView.textContent = data.redemption_id || "—";
         dealView.textContent = data.deal_id || "—";
 
-        // hard errors
         if (res.status === 400 && body.message === "Invalid verification token") {
-          setState("bad","❌","Invalid QR","This token format is invalid.");
-          showPinUI(false);
-          return;
-        }
-        if (res.status === 404 && body.message === "Token not found") {
-          setState("bad","❌","Not found","This token does not exist in the system.");
-          showPinUI(false);
-          return;
-        }
-
-        // pin errors (new)
-        if (state === "invalid_pin") {
-          setState("bad","🔒","Wrong PIN","PIN did not match. Try again.");
-          showPinUI(true);
-          return;
-        }
-
-        // already redeemed
-        if (state === "redeemed") {
           setState(
-            "expired",
-            "✅",
-            "ALREADY REDEEMED",
-            data.redeemed_at ? ("Redeemed at " + fmt(data.redeemed_at) + ". Do not accept again.")
-                            : "This deal was already used. Do not accept again."
+            "bad",
+            "❌",
+            "INVALID QR",
+            "This token format is invalid."
           );
           showPinUI(false);
           return;
         }
 
-        // expired token
-        if (state === "expired") {
-          setState("expired","⏱️","Expired","This token has expired. Ask customer to re-generate.");
+        if (res.status === 404 && body.message === "Token not found") {
+          setState(
+            "bad",
+            "❌",
+            "NOT FOUND",
+            "This token does not exist in the system."
+          );
           showPinUI(false);
           return;
         }
 
-        // valid => show PIN UI
-        if (state === "valid") {
-          setState("ok","✅","VALID","Enter staff PIN and tap CONFIRM.");
+        if (state === "invalid_pin") {
+          setState(
+            "bad",
+            "🔒",
+            "WRONG PIN",
+            "PIN did not match. Please try again."
+          );
           showPinUI(true);
-          redeemBtn.onclick = () => redeemWithPin(token);
+          pinInput.focus();
           return;
         }
 
-        // default fallback
-        setState("bad","⚠️","Unexpected response", body.message || "Unknown validation response.");
+        if (state === "redeemed" || state === "verified") {
+          setState(
+            "expired",
+            "✅",
+            "ALREADY USED",
+            data.redeemed_at
+              ? "This deal was already redeemed at " + fmt(data.redeemed_at) + ". Do not accept it again."
+              : "This deal was already used. Do not accept it again."
+          );
+          showPinUI(false);
+          return;
+        }
+
+        if (state === "expired") {
+          setState(
+            "expired",
+            "⏱️",
+            "QR EXPIRED",
+            "This QR has expired. Ask the customer to generate a fresh one."
+          );
+          showPinUI(false);
+          return;
+        }
+
+        if (state === "valid") {
+          setState(
+            "ok",
+            "✅",
+            "READY TO VERIFY",
+            "Ask the customer to show the QR. Enter your staff PIN to approve redemption."
+          );
+          showPinUI(true);
+          redeemBtn.onclick = () => redeemWithPin(token);
+          pinInput.focus();
+          return;
+        }
+
+        setState(
+          "bad",
+          "⚠️",
+          "UNEXPECTED RESPONSE",
+          body.message || "Unknown validation response."
+        );
         showPinUI(false);
       }
 
@@ -382,11 +581,21 @@
         showPinUI(false);
 
         if (!token) {
-          setState("bad","❌","Missing token","This QR code does not include a verification token.");
+          setState(
+            "bad",
+            "❌",
+            "MISSING TOKEN",
+            "This QR code does not include a verification token."
+          );
           return;
         }
 
-        setState("loading","⏳","Checking…","Validating this redemption token…");
+        setState(
+          "loading",
+          "⏳",
+          "CHECKING…",
+          "Validating this redemption token…"
+        );
 
         try {
           const res = await fetch(
@@ -397,13 +606,23 @@
           const body = await res.json().catch(() => null);
 
           if (!body) {
-            setState("bad","⚠️","Server error","Could not read server response.");
+            setState(
+              "bad",
+              "⚠️",
+              "SERVER ERROR",
+              "Could not read server response."
+            );
             return;
           }
 
           renderFromResponse(res, body, token);
         } catch (e) {
-          setState("bad","⚠️","Network error","Unable to reach verification server.");
+          setState(
+            "bad",
+            "⚠️",
+            "NETWORK ERROR",
+            "Unable to reach verification server."
+          );
         }
       }
 
@@ -412,11 +631,20 @@
       copyBtn.addEventListener("click", async () => {
         const token = getTokenFromUrl();
         if (!token) return;
+
         try {
           await navigator.clipboard.writeText(token);
           copyBtn.textContent = "Copied ✅";
-          setTimeout(() => (copyBtn.textContent = "Copy token"), 1200);
+          setTimeout(() => {
+            copyBtn.textContent = "Copy token";
+          }, 1200);
         } catch {}
+      });
+
+      pinInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !redeemBtn.disabled) {
+          redeemBtn.click();
+        }
       });
 
       verify();
