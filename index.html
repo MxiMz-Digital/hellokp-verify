@@ -72,7 +72,7 @@
         background: rgba(17,24,38,0.78);
         border: 1px solid var(--border);
         border-radius: 24px;
-        padding: 20px;
+        padding: 20px 20px 32px;
         box-shadow: 0 20px 60px rgba(0,0,0,0.35);
         backdrop-filter: blur(12px);
       }
@@ -517,7 +517,7 @@
         }
 
         if (state === "invalid_pin") {
-          setState("bad", "🔒", "WRONG PIN", "PIN did not match. Please try again.");
+          setState("bad", "🔒", "WRONG PIN", "Incorrect PIN. Please try again.");
           showPinUI(true);
           pinInput.focus();
           return;
@@ -529,24 +529,21 @@
             "✅",
             "VERIFIED",
             data.verified_at
-              ? "Redemption confirmed successfully at " + fmt(data.verified_at) + "."
-              : "Redemption confirmed successfully."
+              ? "Redemption approved successfully at " + fmt(data.verified_at) + ". This deal is now marked as used."
+              : "Redemption approved successfully. This deal is now marked as used."
           );
           showPinUI(false);
           return;
         }
 
-        // Important fallback:
-        // if POST succeeds but backend returns redeemed instead of verified,
-        // still show VERIFIED for that immediate action moment.
         if (fromPost && state === "redeemed") {
           setState(
             "verified",
             "✅",
             "VERIFIED",
             data.redeemed_at
-              ? "Redemption confirmed successfully at " + fmt(data.redeemed_at) + "."
-              : "Redemption confirmed successfully."
+              ? "Redemption approved successfully at " + fmt(data.redeemed_at) + ". This deal is now marked as used."
+              : "Redemption approved successfully. This deal is now marked as used."
           );
           showPinUI(false);
           return;
@@ -581,7 +578,7 @@
             "ok",
             "✅",
             "READY TO APPROVE",
-            "Check the customer’s QR and enter your staff PIN to confirm redemption."
+            "Verify the customer and enter your staff PIN to approve."
           );
           showPinUI(true);
           redeemBtn.onclick = () => redeemWithPin(token);
