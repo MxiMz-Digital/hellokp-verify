@@ -258,6 +258,16 @@
         color: var(--green);
       }
 
+      .verified {
+        background: rgba(34,197,94,0.14);
+      }
+      .verified .badge {
+        background: rgba(34,197,94,0.22);
+      }
+      .verified .big {
+        color: #4ade80;
+      }
+
       .expired {
         background: rgba(245,158,11,0.10);
       }
@@ -450,7 +460,7 @@
         }
 
         redeemBtn.disabled = true;
-        redeemBtn.textContent = "VERIFYING…";
+        redeemBtn.textContent = "CONFIRMING…";
 
         try {
           const res = await fetch(EDGE_VERIFY_URL, {
@@ -527,14 +537,27 @@
           return;
         }
 
-        if (state === "redeemed" || state === "verified") {
+        if (state === "redeemed") {
           setState(
             "expired",
-            "✅",
+            "⏱️",
             "ALREADY USED",
             data.redeemed_at
               ? "This deal was already redeemed at " + fmt(data.redeemed_at) + ". Do not accept it again."
               : "This deal was already used. Do not accept it again."
+          );
+          showPinUI(false);
+          return;
+        }
+
+        if (state === "verified") {
+          setState(
+            "verified",
+            "✅",
+            "VERIFIED",
+            data.verified_at
+              ? "Redemption confirmed successfully at " + fmt(data.verified_at) + "."
+              : "Redemption confirmed successfully."
           );
           showPinUI(false);
           return;
@@ -556,7 +579,7 @@
             "ok",
             "✅",
             "READY TO VERIFY",
-            "Ask the customer to show the QR. Enter your staff PIN to approve redemption."
+            "Check the customer’s QR and enter your staff PIN to confirm redemption."
           );
           showPinUI(true);
           redeemBtn.onclick = () => redeemWithPin(token);
