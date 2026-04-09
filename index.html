@@ -497,9 +497,8 @@
       }
 
       function renderFromResponse(res, body, token, fromPost = false) {
-        const data = body.data || {};
-        const state = data.state ? String(data.state) : "";
-
+      const state = body.state ? String(body.state) : "";
+const data = body; // now everything is top-level
         expiresView.textContent = fmt(data.verify_expires_at);
         redemptionView.textContent = data.redemption_id || "—";
         dealView.textContent = data.deal_id || "—";
