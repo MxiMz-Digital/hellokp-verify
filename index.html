@@ -585,11 +585,11 @@ const data = body; // now everything is top-level
           return;
         }
 
-        setState(
+               setState(
           "bad",
           "⚠️",
           "UNEXPECTED RESPONSE",
-          body.message || "Unknown validation response."
+          body.hint || body.message || "Unknown validation response."
         );
         showPinUI(false);
       }
